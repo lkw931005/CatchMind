@@ -31,23 +31,29 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-public class Paint extends Frame implements ActionListener,Runnable {
+public class Paint extends Frame implements ActionListener, Runnable {
 
 	Panel pLeft, p1, p2, pRight;
 	Button black, orange, green, plus, minus, erase, eraseAll;
 	CanvasDemo cd;
 	TextArea ta;
 	TextField tf;
-	BufferedReader br;
-	 PrintWriter pw;
-	 String msg="";
+	static BufferedReader br;
+	static PrintWriter pw;
+	static String msg = "";
+	static Socket socket;
+	String ip = "203.236.209.196";
+	int port = 3000;
+	InputStream is = null;
 
-
-	
 	// BorderLayout()이용하여 전체 레이아웃 설정
 
 	public Paint() {
@@ -70,9 +76,6 @@ public class Paint extends Frame implements ActionListener,Runnable {
 		orange.setBackground(Color.orange);
 		green = new Button();
 		green.setBackground(Color.green);
-		
-
-		
 
 		p1.add(black);
 		p1.add(orange);
@@ -94,22 +97,18 @@ public class Paint extends Frame implements ActionListener,Runnable {
 		p2.add(minus);
 		p2.add(erase);
 		p2.add(eraseAll);
-		Label la = new Label("문제: "+"컴퓨터");
+		Label la = new Label("문제: " + "컴퓨터");
 		p2.add(la);
-		
 
 		pLeft.add(p2, "Center");
 
-		
 		pRight = new Panel(new GridBagLayout()) {
 			public Insets getInsets() {
 				return new Insets(70, 20, 20, 20);
 			}
 		};
-		
+
 		GridBagConstraints gbc = new GridBagConstraints();
-	
-	
 
 		gbc.fill = GridBagConstraints.BOTH;
 
@@ -126,21 +125,16 @@ public class Paint extends Frame implements ActionListener,Runnable {
 		pRight.add(cd, gbc);
 
 		gbc.gridy = 1;
-		
+
 		ta = new TextArea(); // 채팅창
 		pRight.add(ta, gbc);
 		gbc.gridy = 2;
 		tf = new TextField();
-		
-		tf.addActionListener(this);
-		
-		
-		
 
-		
-		
+		tf.addActionListener(this);
+
 		pRight.add(tf, gbc);
-		
+
 		cd.setBackground(Color.WHITE);
 
 		black.addActionListener(new EventHandler());
@@ -158,6 +152,15 @@ public class Paint extends Frame implements ActionListener,Runnable {
 				System.exit(0);
 			}
 		});
+		InputStreamReader isr = new InputStreamReader(is);
+		BufferedReader br = new BufferedReader(isr);
+
+		try {
+			ta.setText(br.readLine());
+		} catch (IOException e) {
+
+			e.printStackTrace();
+		}
 
 	} // end of paintSampleEx() 생성자
 
@@ -198,64 +201,67 @@ public class Paint extends Frame implements ActionListener,Runnable {
 	}
 
 	public static void main(String[] args) {
-		// 서버 접속
-		
-		final int port = 3000; 
-		final String ip = "203.236.209.196";
-		Socket socket = null;
+
 		try {
-			socket = new Socket(ip, port);
-		
-		
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
+
+			socket = new Socket("203.236.209.196", 3000);
+			br = new BufferedReader(new InputStreamReader(
+					socket.getInputStream()));
+			pw = new PrintWriter(socket.getOutputStream(), true);
+		} catch (Exception e) {
+			System.out.println("연결 실패");
+		}
+
+		try {
+			OutputStream os = socket.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os);
+			while (true) {
+				osw.write(msg + "\n");
+				osw.flush();
+			}
+
 		} catch (IOException e) {
 			e.printStackTrace();
+		} finally {
+			try {
+				socket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
-		Paint ps = new Paint();
-		ps.setBounds(300, 100, 600, 684);
-		ps.setVisible(true);
+
 	}
 
+	class CanvasDemo extends Canvas {
+		int x = -10, y = -10, w = 10, h = 10;
+		int sw = 0;
+		Color color = Color.black;
 
+		public void update(Graphics g) {
+			paint(g);
+		}
 
-
-
-class CanvasDemo extends Canvas {
-	int x = -10, y = -10, w = 10, h = 10;
-	int sw = 0;
-	Color color = Color.black;
-
-	public void update(Graphics g) {
-		paint(g);
-	}
-
-	public void paint(Graphics g) {
-		if (sw == 0) {
-			g.setColor(color);
-			g.fillOval(x, y, w, h); // 원 출력
-		} else if (sw == 1) {
-			g.clearRect(0, 0, 500, 400);
+		public void paint(Graphics g) {
+			if (sw == 0) {
+				g.setColor(color);
+				g.fillOval(x, y, w, h); // 원 출력
+			} else if (sw == 1) {
+				g.clearRect(0, 0, 500, 400);
+			}
 		}
 	}
-}
 
-@Override
-public void run() {
-}
+	@Override
+	public void run() {
 
+	}
 
+	@Override
+	public void actionPerformed(ActionEvent e) {
 
+		msg += tf.getText() + "\n";
+		tf.setText("");
+		ta.setText(msg);
 
-
-@Override
-public void actionPerformed(ActionEvent e) {
-	
-	
-	msg+=tf.getText()+"\n";
-	tf.setText("");
-	ta.setText(msg);
-	
-	
-}
+	}
 }
