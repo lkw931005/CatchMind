@@ -1,6 +1,7 @@
 package com.io;
 
 import java.awt.GridLayout;
+import java.awt.TextField;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -15,16 +16,19 @@ public class Login extends JFrame {
 	JLabel la;
 	JButton bt;
 	ImageIcon im;
-
+	TextField tf;
 	public Login() {
 
 		p = new JPanel();
-		im = new ImageIcon("login.png");
-
+		im = new ImageIcon("uesr.jpg");
 		la = new JLabel(im);
-	
 		p.add(la);
-		bt = new JButton("½ÃÀÛ");
+		la=new JLabel("ë‹‰ë„¤ìž„");
+		p.add(la);
+		tf=new TextField(10);
+		
+		p.add(tf);
+		bt = new JButton("ì‹œìž‘");
 		bt.setSize(200, 50);
 		p.add(bt);
 
